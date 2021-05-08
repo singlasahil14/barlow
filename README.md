@@ -20,9 +20,9 @@ Barlow is a tool for identifying the failure modes for a given neural network. T
 
 For the images with label water jug, when feature[1378] (visually identified as 'water jug handle') is less than 0.089335, error rate increases to 100.0% from 50.0%, i.e an increase of 50.0% in the failure rate.
 
-![images](./barlow/images/water_jug_examples.png)
-![heatmaps](./barlow/images/water_jug_heatmaps.png)
-![attacks](./barlow/images/water_jug_attacks.png)
+![images](./images/water_jug_examples.png)
+![heatmaps](./images/water_jug_heatmaps.png)
+![attacks](./images/water_jug_attacks.png)
 
 ## Citation
 
