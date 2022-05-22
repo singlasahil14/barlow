@@ -27,7 +27,9 @@ Barlow is a tool for identifying the failure modes for a given neural network. T
 ![attacks2](./images/syringe_attacks.png)
 
 ## Running on custom dataset
-+ Run **failure_explanation_sample.ipynb** to identify example failure modes for the given set of images (in sample_data/) using the robust model located in models/.
++ Load your custom dataset into the folder ```sample_data/```
++ Specify the ```predictions, labels, filenames``` as in the file ```metadata.csv```.
++ Run **failure_explanation_sample.ipynb** to identify example failure modes for the given set of images (in ```sample_data/```) using the robust model located in models/.
 + For the images with label water jug, when feature[1378] (visually identified as 'water jug handle') is less than 0.089335, error rate increases to 100.0% from 50.0%, i.e an increase of 50.0% in the failure rate.
 
 ![images](./images/water_jug_examples.png)
