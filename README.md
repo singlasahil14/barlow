@@ -17,14 +17,18 @@ Barlow is a tool for identifying the failure modes for a given neural network. T
 + Load the **Robust Resnet-50 model** using the command given below:   
 ```wget -O models/robust_resnet50.pth  https://www.dropbox.com/s/knf4uimlqsi1yz8/imagenet_l2_3_0.pt?dl=0```
 + Run **failure_explanation_sample.ipynb** to identify example failure modes for the given set of images (in sample_data/) using the robust model located in models/.
-
-## Example failure mode
-
-For the images with label water jug, when feature[1378] (visually identified as 'water jug handle') is less than 0.089335, error rate increases to 100.0% from 50.0%, i.e an increase of 50.0% in the failure rate.
++ For the images with label water jug, when feature[1378] (visually identified as 'water jug handle') is less than 0.089335, error rate increases to 100.0% from 50.0%, i.e an increase of 50.0% in the failure rate.
 
 ![images](./images/water_jug_examples.png)
 ![heatmaps](./images/water_jug_heatmaps.png)
 ![attacks](./images/water_jug_attacks.png)
+
++ Run **failure_explanation.ipynb** to find failure modes of various ImageNet classes.
++ Specify ```class_index, prediction, model_name``` in the jupyter notebook to visualize features in Section F of the paper.
++ Example for ```class_index = 845, grouping = prediction, model_name = standard``` given below:
+![images](./images/syringe_images.jpg)
+![heatmaps](./images/syringe_heatmaps.jpg)
+![attacks](./images/syringe_attacks.jpg)
 
 ## Citation
 
