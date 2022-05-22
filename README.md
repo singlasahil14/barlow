@@ -26,9 +26,9 @@ Barlow is a tool for identifying the failure modes for a given neural network. T
 + Run **failure_explanation.ipynb** to find failure modes of various ImageNet classes.
 + Specify ```class_index, prediction, model_name``` in the jupyter notebook to visualize features in Section F of the paper.
 + Example for ```class_index = 845, grouping = prediction, model_name = standard``` given below:
-![images2](./images/syringe_images.jpg)
-![heatmaps2](./images/syringe_heatmaps.jpg)
-![attacks2](./images/syringe_attacks.jpg)
+![images2](./images/syringe_images.png)
+![heatmaps2](./images/syringe_heatmaps.png)
+![attacks2](./images/syringe_attacks.png)
 
 ## Citation
 
