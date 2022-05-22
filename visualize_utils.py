@@ -88,12 +88,11 @@ def compute_heatmaps(imgs, masks):
 # Visualize a single feature 'feature_id' using 'robust_model'
 # and 'group_images'
 def feature_visualization(robust_model, group_images, features, feature_id,
-                          data_loader, grouping, num_images=6):
-    dataset = data_loader.dataset
+                          dataset, grouping, num_images=6):
     sorted_indices = np.argsort(features[:, feature_id])
     indices_high = sorted_indices[-num_images:]
     image_indices_high = group_images[indices_high]
-    images_highest, labels_highest, preds_highest = load_images(image_indices_high, data_loader)
+    images_highest, labels_highest, preds_highest = load_images(image_indices_high, dataset)
 
     trunc_class_names = {}
     images_captions = []
@@ -111,7 +110,6 @@ def feature_visualization(robust_model, group_images, features, feature_id,
             images_captions.append(str(index))                
             trunc_class_names[index] = caption
 
-        images_captions.append(caption)
         heatmaps_captions.append('activation\n = {:.2f}'.format(
             features[index, feature_id]))
         
@@ -148,28 +146,28 @@ def feature_visualization(robust_model, group_images, features, feature_id,
 
 # Display the most activating images, heatmaps and feature attack 
 # images for a decision_path
-def display_images(decision_path, data_loader, model, features, 
+def display_images(decision_path, dataset, model, features, feature_indices, 
                    grouping, image_indices=None, num_images=6):
     if image_indices is None:
-        image_indices = np.arange(len(data_loader.dataset))
+        image_indices = np.arange(len(dataset))
     img_list = []
     feature_id_list = []
     for node in decision_path:
         node_id, feature_id, feature_threshold, direction = node
-        feature_visualization(model, image_indices, features, feature_id,
-                              data_loader, grouping, num_images=num_images)
+        feature_index = feature_indices[feature_id]
+        feature_visualization(model, image_indices, features, feature_index,
+                              dataset, grouping, num_images=num_images)
         
 # Display the failures at a leaf node
-def display_failures(leaf_id, leaf_failure_indices, data_loader, grouping, 
+def display_failures(leaf_id, leaf_failure_indices, dataset, grouping, 
                      num_images=6, num_rows=1):
-    dataset = data_loader.dataset
     if grouping == "label":
         footnote = "model prediction"
     else:
         footnote = "label"
     title = "Random failure samples in leaf[{:d}] ({:s} at bottom)".format(leaf_id, footnote)
 
-    image_indices = np.arange(len(data_loader.dataset))
+    image_indices = np.arange(len(dataset))
     if len(leaf_failure_indices) > num_images*num_rows:
         replace = False
     else:
@@ -182,7 +180,7 @@ def display_failures(leaf_id, leaf_failure_indices, data_loader, grouping,
     start = 0
     for row in range(num_rows):
         image_indices_select = image_indices_failures[start: start + num_images]
-        images_failures, labels_failures, preds_failures = load_images(image_indices_select, data_loader)
+        images_failures, labels_failures, preds_failures = load_images(image_indices_select, dataset)
         
         images_captions = []
         for i in range(num_images):
@@ -190,12 +188,14 @@ def display_failures(leaf_id, leaf_failure_indices, data_loader, grouping,
                 caption = preds_failures[i]
             else:
                 caption = labels_failures[i]
+                
             if len(caption) <= 12:
                 images_captions.append(caption)
             else:
                 index = dataset.class_indices_dict[caption]
                 images_captions.append(str(index))                
                 trunc_class_names[index] = caption
+                
         show_image_row([images_failures.cpu()], ['failures'], tlist=[images_captions], 
                        title=title, fontsize=18)
         start = start + num_images

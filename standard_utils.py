@@ -2,23 +2,24 @@ import os
 os.environ['NOTEBOOK_MODE'] = '1'
 import cv2
 import math
-# import dill
+
 import sys
 import torch as ch
 import torch.nn.functional as F
 import numpy as np
-# import seaborn as sns
+
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
+from sklearn.feature_selection import mutual_info_classif
 
 from scipy import stats
 from collections import defaultdict
-# from tqdm import tqdm, tqdm_notebook
 import matplotlib.pyplot as plt
-from robustness import model_utils, datasets
+from robustness import model_utils
+from robustness import datasets as dataset_utils
 from robustness.tools.label_maps import CLASS_DICT
 
 # Compute accuracy using logits and labels
@@ -131,7 +132,7 @@ def failure_statistics(logits, labels):
 
 # Print failure statistics for group of images with 
 # predicted class index = 'class_idx'
-def print_failure_stats(failure_dict, class_idx, class_names):
+def print_failure_stats_pred(failure_dict, class_idx, class_names):
     pred_failures_arr = failure_dict['pred_failures']
     pred_counts_arr = failure_dict['pred_counts']
     label_counts_arr = failure_dict['label_counts']
@@ -178,6 +179,53 @@ def failure_data(indices, features, logits, labels):
     failure_indices = np.logical_not(preds_indices==labels_indices)    
     return features_indices, failure_indices
 
+# Find indices where predicted or label class (depending on grouping) is class_idx
+def failure_indices_class(train_logits, train_labels, class_idx, class_names, 
+                          grouping='label', print_stats=True):
+    train_failure_dict = failure_statistics(train_logits, train_labels)
+    if grouping == 'label':
+        if print_stats:
+            class_name, num_failures, num_preds, num_labels = print_failure_stats_label(
+                train_failure_dict, class_idx, class_names)
+        train_indices_class = np.nonzero(train_labels==class_idx)[0]
+    elif grouping == 'pred':
+        if print_stats:
+            class_name, num_failures, num_preds, class_names = print_failure_stats_pred(
+                train_failure_dict, class_idx, class_names)
+        train_indices_class = predicted_class_indices(train_logits, class_idx)
+    return train_indices_class
+
+def mutual_info_select(train_features_class, train_failure_class, num_features=20):
+    mi = mutual_info_classif(train_features_class, train_failure_class, 
+                             random_state = 0)
+    important_features_indices = np.argsort(mi)[-num_features:]
+    important_features_values = mi[important_features_indices]
+    return important_features_indices, important_features_values
+
+def feature_importance_select(train_features_class, num_features=20):
+    fi = np.mean(train_features_class, axis=0)
+    important_features_indices = np.argsort(fi)[-num_features:]
+    important_features_values = fi[important_features_indices]
+    return important_features_indices, important_features_values
+    
+# Perform feature selection using some prespecified method such as mutual_information
+def select_important_features(train_features, train_failure, num_features=20, 
+                              method='mutual_info'):
+    if method == 'mutual_info':
+        important_indices, _ = mutual_info_select(
+                                            train_features, 
+                                            train_failure, 
+                                            num_features=num_features)
+    elif method == 'feature_importance':
+        important_indices, _ = feature_importance_select(
+                                            train_features, 
+                                            num_features=num_features)        
+    else:
+        raise ValueError('Unknown feature selection method') 
+        
+    train_sparse_features = train_features[:, important_indices]
+    return train_sparse_features, important_indices
+
 # Normalize data using mean and standard deviation
 def normalize(train_data, test_data):
     scaler = StandardScaler()
@@ -187,12 +235,12 @@ def normalize(train_data, test_data):
     return train_data_n, test_data_n
 
 # Load images of specified indices using data_loader
-def load_images(indices, data_loader):
+def load_images(indices, dataset):
     img_list = []
     labels_list = []
     preds_list = []
     for idx in indices:
-        img, label, pred = data_loader.dataset.__getitem__(idx)
+        img, label, pred = dataset.__getitem__(idx)
         img_list.append(img)
         labels_list.append(label)
         preds_list.append(pred)
@@ -220,6 +268,45 @@ def load_model(model_name, model_path, dataset):
     model, _ = model_utils.make_and_restore_model(**model_kwargs)
     model.eval()
     return model
+
+def load_robust_model():
+    dataset_function = getattr(dataset_utils, 'ImageNet')
+    dataset = dataset_function('')
+
+    model_kwargs = {
+        'arch': 'resnet50',
+        'dataset': dataset,
+        'resume_path': f'./models/robust_resnet50.pth',
+        'parallel': False
+    }
+    model, _ = model_utils.make_and_restore_model(**model_kwargs)
+    model.eval()
+    return model
+    
+def extract_features(robust_model, dataset, batch_size=32):
+    data_loader = ch.utils.data.DataLoader(dataset,
+                                              batch_size=batch_size, 
+                                              shuffle=False, num_workers=4)
+    
+    train_features, train_preds, train_labels = [], [], []
+    total = 0
+    for _, (ims, labels, preds) in enumerate(data_loader):
+        ims = ims.cuda()
+        batch_size = ims.shape[0]
+        (_, features), _ = robust_model(ims, with_latent=True)
+        features = features.detach().cpu().numpy()
+        
+        labels = np.array(labels)
+        preds = np.array(preds)
+        
+        train_features.append(features)
+        train_labels.append(labels)
+        train_preds.append(preds)
+        
+    train_features = np.concatenate(train_features, axis=0)
+    train_labels = np.concatenate(train_labels, axis=0)
+    train_preds = np.concatenate(train_preds, axis=0)
+    return train_features, train_labels, train_preds
 
 def print_with_stars(print_str, total_count=115, prefix="", suffix="", star='*'):
     str_len = len(print_str)

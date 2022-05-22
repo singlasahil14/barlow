@@ -219,3 +219,26 @@ class CustomDecisionTreeClassifier(DecisionTreeClassifier):
                 error_coverage_array[node_id] = child_EC
 
         return error_rate_array, error_coverage_array
+    
+# Train decision tree
+def train_decision_tree(train_sparse_features, train_failure, max_depth=1, criterion="entropy"):
+    num_true = np.sum(train_failure)
+    num_false = np.sum(np.logical_not(train_failure))
+    rel_weight = num_false/num_true
+    class_weight_dict = {0: 1, 1: rel_weight}
+
+    decision_tree = CustomDecisionTreeClassifier(
+        max_depth=max_depth, criterion=criterion, class_weight=class_weight_dict)
+    decision_tree.fit_tree(
+        train_sparse_features, train_failure)
+    return decision_tree
+
+# Select leaf nodes with highest importance value i.e highest contribution to average leaf error rate
+def important_leaf_nodes(decision_tree, precision_array, recall_array):
+    leaf_ids = decision_tree.leaf_ids
+    leaf_precision = precision_array[leaf_ids]
+    leaf_recall = recall_array[leaf_ids]
+    leaf_precision_recall = leaf_precision*leaf_recall
+
+    important_leaves = np.argsort(-leaf_precision_recall)
+    return leaf_ids[important_leaves]
