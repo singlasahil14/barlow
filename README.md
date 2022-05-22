@@ -10,6 +10,7 @@ Barlow is a tool for identifying the failure modes for a given neural network. T
 + scikit-learn 0.23+
 + scipy 1.5+
 + matplotlib 3.2+
++ robustness
 
 ## How to run?
 
