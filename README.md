@@ -16,7 +16,7 @@ Barlow is a tool for identifying the failure modes for a given neural network. T
 
 + Load the **Robust Resnet-50 model** using the command given below:   
 ```wget -O models/robust_resnet50.pth  https://www.dropbox.com/s/knf4uimlqsi1yz8/imagenet_l2_3_0.pt?dl=0```
-+ Run failure_explanation_sample.ipynb to identify example failure modes for the given set of images (in sample_data/) using the robust model located in models/.
++ Run **failure_explanation_sample.ipynb** to identify example failure modes for the given set of images (in sample_data/) using the robust model located in models/.
 
 ## Example failure mode
 
